@@ -1,16 +1,22 @@
 import { Module } from '@nestjs/common';
-import { ClientsModule } from '@nestjs/microservices';
+import { ClientGrpcProxy, RpcException } from '@nestjs/microservices';
 import { grpcClientOptions } from '../grpc-client.options';
 import { HeroController } from './hero.controller';
 
+class ErrorHandlingProxy extends ClientGrpcProxy {
+  serializeError(err) {
+    return new RpcException(err);
+  }
+}
+
 @Module({
-  imports: [
-    ClientsModule.register([
-      {
-        name: 'HERO_PACKAGE',
-        ...grpcClientOptions,
+  providers: [
+    {
+      provide: 'HERO_PACKAGE',
+      useFactory() {
+        return new ErrorHandlingProxy(grpcClientOptions.options);
       },
-    ]),
+    },
   ],
   controllers: [HeroController],
 })
